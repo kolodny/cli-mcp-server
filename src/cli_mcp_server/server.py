@@ -62,7 +62,7 @@ class CommandExecutor:
         """
         Normalizes a path and ensures it's within allowed directory.
         """
-        try:
+        try:                        
             if os.path.isabs(path):
                 # If absolute path, check directly
                 real_path = os.path.abspath(os.path.realpath(path))
@@ -125,7 +125,12 @@ class CommandExecutor:
                     continue
 
                 # For any path-like argument, validate it
-                if "/" in arg or "\\" in arg or os.path.isabs(arg) or arg == ".":
+                if "/" in arg or "\\" in arg or os.path.isabs(arg) or arg == ".":                    
+                    if self._is_url_path(arg):
+                        # If it's a URL, we don't need to normalize it
+                        validated_args.append(arg)
+                        continue
+                    
                     normalized_path = self._normalize_path(arg)
                     validated_args.append(normalized_path)
                 else:
@@ -136,6 +141,20 @@ class CommandExecutor:
 
         except ValueError as e:
             raise CommandSecurityError(f"Invalid command format: {str(e)}")
+
+    def _is_url_path(self, path: str) -> bool:
+        """
+        Checks if a given path is a URL of type http or https.
+
+        Args:
+            path (str): The path to check.
+
+        Returns:
+            bool: True if the path is a URL, False otherwise.
+        """
+        url_pattern = re.compile(r"^(http|https)://")
+        return bool(url_pattern.match(path))
+      
 
     def _is_path_safe(self, path: str) -> bool:
         """
