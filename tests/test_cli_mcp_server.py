@@ -5,6 +5,7 @@ import shutil
 import tempfile
 import unittest
 
+
 # Helper to print results in a simple table format
 def print_results_table(name: str, results: list) -> None:
     print(f"\n[{name}] Results Table:")
@@ -15,6 +16,7 @@ def print_results_table(name: str, results: list) -> None:
         # Replace newlines in text for single-line display
         text = tc.text.strip().replace("\n", "\\n")
         print(f"{idx:<3} | {tc.type:<6} | {error_flag!s:<5} | {text}")
+
 
 class TestCLIMCPServer(unittest.TestCase):
     def setUp(self):
@@ -27,9 +29,11 @@ class TestCLIMCPServer(unittest.TestCase):
         # Reload server module to pick up env changes
         try:
             import cli_mcp_server.server as server_module
+
             self.server = importlib.reload(server_module)
         except ImportError:
             import cli_mcp_server.server as server_module
+
             self.server = server_module
 
     def tearDown(self):
@@ -58,8 +62,10 @@ class TestCLIMCPServer(unittest.TestCase):
         texts = [tc.text for tc in result]
         # Debug print: show results in table form
         print_results_table("test_run_ls", result)
-        self.assertTrue(any("foo.txt" in text for text in texts),
-                        f"Output did not contain 'foo.txt': {texts}")
+        self.assertTrue(
+            any("foo.txt" in text for text in texts),
+            f"Output did not contain 'foo.txt': {texts}",
+        )
         self.assertTrue(any("return code: 0" in text for text in texts))
 
     def test_run_curl_ifconfig(self):
@@ -71,17 +77,22 @@ class TestCLIMCPServer(unittest.TestCase):
         os.environ["ALLOWED_FLAGS"] = "all"
         # Reload server to pick up new settings
         import cli_mcp_server.server as server_module
+
         self.server = importlib.reload(server_module)
         result = asyncio.run(
-            self.server.handle_call_tool("run_command", {"command": "curl -sG ifconfig.me"})
+            self.server.handle_call_tool(
+                "run_command", {"command": "curl -sG ifconfig.me"}
+            )
         )
         texts = [tc.text for tc in result]
         # Debug print: show results in table form
         print_results_table("test_run_curl_ifconfig", result)
         output_texts = [t for t in texts if "return code" not in t]
-        self.assertTrue(any(t.strip() for t in output_texts),
-                        f"No IP address retrieved: {texts}")
+        self.assertTrue(
+            any(t.strip() for t in output_texts), f"No IP address retrieved: {texts}"
+        )
         self.assertTrue(any("return code: 0" in text for text in texts))
+
 
 if __name__ == "__main__":
     unittest.main()
