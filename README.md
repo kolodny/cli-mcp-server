@@ -9,6 +9,7 @@ comprehensive security features.
 ![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)
 ![MCP Protocol](https://img.shields.io/badge/MCP-Compatible-green)
 [![smithery badge](https://smithery.ai/badge/cli-mcp-server)](https://smithery.ai/protocol/cli-mcp-server)
+[![Python Tests](https://github.com/MladenSU/cli-mcp-server/actions/workflows/python-tests.yml/badge.svg)](https://github.com/MladenSU/cli-mcp-server/actions/workflows/python-tests.yml)
 
 <a href="https://glama.ai/mcp/servers/q89277vzl1"><img width="380" height="200" src="https://glama.ai/mcp/servers/q89277vzl1/badge" /></a>
 
