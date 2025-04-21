@@ -155,6 +155,69 @@ class TestCLIMCPServer(unittest.TestCase):
             f"Unexpected combined output, got: {texts[0]!r}",
         )
         self.assertTrue(any("return code: 0" in text for text in texts))
+    
+    def test_shell_operator_append_redirection(self):
+        # Enable shell operators and allow all commands/flags
+        os.environ["ALLOW_SHELL_OPERATORS"] = "true"
+        os.environ["ALLOWED_COMMANDS"] = "all"
+        os.environ["ALLOWED_FLAGS"] = "all"
+        # Reload server to pick up new settings
+        import cli_mcp_server.server as server_module
+
+        server = importlib.reload(server_module)
+        # Create an output file and append text using '>>'
+        file_name = "append.txt"
+        file_path = os.path.join(self.tempdir.name, file_name)
+        # Ensure the file exists
+        open(file_path, "w").close()
+        result = asyncio.run(
+            server.handle_call_tool("run_command", {"command": f"echo hello >> {file_name}"})
+        )
+        texts = [tc.text for tc in result]
+        print_results_table("test_shell_operator_append_redirection", result)
+        # After redirection, file should contain 'hello'
+        with open(file_path, "r") as f:
+            content = f.read().strip()
+        self.assertEqual(content, "hello", f"Unexpected file content: {content!r}")
+        self.assertTrue(any("return code: 0" in text for text in texts))
+
+    def test_shell_operator_pipe(self):
+        # Enable shell operators and allow all commands/flags
+        os.environ["ALLOW_SHELL_OPERATORS"] = "true"
+        os.environ["ALLOWED_COMMANDS"] = "all"
+        os.environ["ALLOWED_FLAGS"] = "all"
+        # Reload server to pick up new settings
+        import cli_mcp_server.server as server_module
+
+        server = importlib.reload(server_module)
+        # Execute a simple pipeline to filter output
+        result = asyncio.run(
+            server.handle_call_tool("run_command", {"command": "echo 123 | grep 123"})
+        )
+        texts = [tc.text for tc in result]
+        print_results_table("test_shell_operator_pipe", result)
+        # The pipeline should output '123'
+        self.assertEqual(texts[0].strip(), "123", f"Unexpected pipeline output: {texts[0]!r}")
+        self.assertTrue(any("return code: 0" in text for text in texts))
+
+    def test_shell_operator_or(self):
+        # Enable shell operators and allow all commands/flags
+        os.environ["ALLOW_SHELL_OPERATORS"] = "true"
+        os.environ["ALLOWED_COMMANDS"] = "all"
+        os.environ["ALLOWED_FLAGS"] = "all"
+        # Reload server to pick up new settings
+        import cli_mcp_server.server as server_module
+
+        server = importlib.reload(server_module)
+        # Use '||' to fallback on failure
+        result = asyncio.run(
+            server.handle_call_tool("run_command", {"command": "false || echo OR_OK"})
+        )
+        texts = [tc.text for tc in result]
+        print_results_table("test_shell_operator_or", result)
+        # The OR operation should output 'OR_OK'
+        self.assertEqual(texts[0].strip(), "OR_OK", f"Unexpected OR output: {texts[0]!r}")
+        self.assertTrue(any("return code: 0" in text for text in texts))
 
 
 if __name__ == "__main__":
