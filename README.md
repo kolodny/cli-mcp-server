@@ -16,23 +16,22 @@ comprehensive security features.
 
 # Table of Contents
 
-- [CLI MCP Server](#cli-mcp-server)
-- [Table of Contents](#table-of-contents)
-  - [Overview](#overview)
-  - [Features](#features)
-  - [Configuration](#configuration)
-  - [Installation](#installation)
-  - [Available Tools](#available-tools)
-    - [run\_command](#run_command)
-    - [show\_security\_rules](#show_security_rules)
-  - [Usage with Claude Desktop](#usage-with-claude-desktop)
-  - [Security Features](#security-features)
-  - [Error Handling](#error-handling)
-  - [Development](#development)
+1. [Overview](#overview)
+2. [Features](#features)
+3. [Configuration](#configuration)
+4. [Available Tools](#available-tools)
+    - [run_command](#run_command)
+    - [show_security_rules](#show_security_rules)
+5. [Usage with Claude Desktop](#usage-with-claude-desktop)
+    - [Development/Unpublished Servers Configuration](#developmentunpublished-servers-configuration)
+    - [Published Servers Configuration](#published-servers-configuration)
+6. [Security Features](#security-features)
+7. [Error Handling](#error-handling)
+8. [Development](#development)
     - [Prerequisites](#prerequisites)
     - [Building and Publishing](#building-and-publishing)
     - [Debugging](#debugging)
-  - [License](#license)
+9. [License](#license)
 
 ---
 
