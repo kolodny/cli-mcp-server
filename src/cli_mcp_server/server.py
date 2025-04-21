@@ -63,16 +63,20 @@ class CommandExecutor:
         """
         Normalizes a path and ensures it's within allowed directory.
         """
-        try:                        
+        try:
             if os.path.isabs(path):
                 # If absolute path, check directly
                 real_path = os.path.abspath(os.path.realpath(path))
             else:
                 # If relative path, combine with allowed_dir first
-                real_path = os.path.abspath(os.path.realpath(os.path.join(self.allowed_dir, path)))
+                real_path = os.path.abspath(
+                    os.path.realpath(os.path.join(self.allowed_dir, path))
+                )
 
             if not self._is_path_safe(real_path):
-                raise CommandSecurityError(f"Path '{path}' is outside of allowed directory: {self.allowed_dir}")
+                raise CommandSecurityError(
+                    f"Path '{path}' is outside of allowed directory: {self.allowed_dir}"
+                )
 
             return real_path
         except CommandSecurityError:
@@ -133,9 +137,8 @@ class CommandExecutor:
         Returns:
             bool: True if the path is a URL, False otherwise.
         """
-        url_pattern = re.compile(r"^(http|https)://")
+        url_pattern = re.compile(r"^https?://")
         return bool(url_pattern.match(path))
-      
 
     def _is_path_safe(self, path: str) -> bool:
         """
@@ -298,7 +301,9 @@ class CommandExecutor:
             - Captures both stdout and stderr
         """
         if len(command_string) > self.security_config.max_command_length:
-            raise CommandSecurityError(f"Command exceeds maximum length of {self.security_config.max_command_length}")
+            raise CommandSecurityError(
+                f"Command exceeds maximum length of {self.security_config.max_command_length}"
+            )
 
         try:
             command, args = self.validate_command(command_string)
@@ -334,7 +339,9 @@ class CommandExecutor:
                     cwd=self.allowed_dir,
                 )
         except subprocess.TimeoutExpired:
-            raise CommandTimeoutError(f"Command timed out after {self.security_config.command_timeout} seconds")
+            raise CommandTimeoutError(
+                f"Command timed out after {self.security_config.command_timeout} seconds"
+            )
         except CommandError:
             raise
         except Exception as e:
@@ -377,7 +384,9 @@ def load_security_config() -> SecurityConfig:
     allow_shell_operators = allow_shell_operators_env.lower() in ('true', '1')
     
     return SecurityConfig(
-        allowed_commands=set() if allow_all_commands else set(allowed_commands.split(",")),
+        allowed_commands=(
+            set() if allow_all_commands else set(allowed_commands.split(","))
+        ),
         allowed_flags=set() if allow_all_flags else set(allowed_flags.split(",")),
         max_command_length=int(os.getenv("MAX_COMMAND_LENGTH", "1024")),
         command_timeout=int(os.getenv("COMMAND_TIMEOUT", "30")),
@@ -387,14 +396,24 @@ def load_security_config() -> SecurityConfig:
     )
 
 
-executor = CommandExecutor(allowed_dir=os.getenv("ALLOWED_DIR", ""), security_config=load_security_config())
+executor = CommandExecutor(
+    allowed_dir=os.getenv("ALLOWED_DIR", ""), security_config=load_security_config()
+)
 
 
 @server.list_tools()
 async def handle_list_tools() -> list[types.Tool]:
-    commands_desc = "all commands" if executor.security_config.allow_all_commands else ", ".join(executor.security_config.allowed_commands)
-    flags_desc = "all flags" if executor.security_config.allow_all_flags else ", ".join(executor.security_config.allowed_flags)
-    
+    commands_desc = (
+        "all commands"
+        if executor.security_config.allow_all_commands
+        else ", ".join(executor.security_config.allowed_commands)
+    )
+    flags_desc = (
+        "all flags"
+        if executor.security_config.allow_all_flags
+        else ", ".join(executor.security_config.allowed_flags)
+    )
+
     return [
         types.Tool(
             name="run_command",
@@ -417,7 +436,9 @@ async def handle_list_tools() -> list[types.Tool]:
         ),
         types.Tool(
             name="show_security_rules",
-            description=("Show what commands and operations are allowed in this environment.\n"),
+            description=(
+                "Show what commands and operations are allowed in this environment.\n"
+            ),
             inputSchema={
                 "type": "object",
                 "properties": {},
@@ -427,10 +448,14 @@ async def handle_list_tools() -> list[types.Tool]:
 
 
 @server.call_tool()
-async def handle_call_tool(name: str, arguments: Optional[Dict[str, Any]]) -> List[types.TextContent]:
+async def handle_call_tool(
+    name: str, arguments: Optional[Dict[str, Any]]
+) -> List[types.TextContent]:
     if name == "run_command":
         if not arguments or "command" not in arguments:
-            return [types.TextContent(type="text", text="No command provided", error=True)]
+            return [
+                types.TextContent(type="text", text="No command provided", error=True)
+            ]
 
         try:
             result = executor.execute(arguments["command"])
@@ -439,7 +464,9 @@ async def handle_call_tool(name: str, arguments: Optional[Dict[str, Any]]) -> Li
             if result.stdout:
                 response.append(types.TextContent(type="text", text=result.stdout))
             if result.stderr:
-                response.append(types.TextContent(type="text", text=result.stderr, error=True))
+                response.append(
+                    types.TextContent(type="text", text=result.stderr, error=True)
+                )
 
             response.append(
                 types.TextContent(
@@ -451,7 +478,11 @@ async def handle_call_tool(name: str, arguments: Optional[Dict[str, Any]]) -> Li
             return response
 
         except CommandSecurityError as e:
-            return [types.TextContent(type="text", text=f"Security violation: {str(e)}", error=True)]
+            return [
+                types.TextContent(
+                    type="text", text=f"Security violation: {str(e)}", error=True
+                )
+            ]
         except subprocess.TimeoutExpired:
             return [
                 types.TextContent(
@@ -464,9 +495,17 @@ async def handle_call_tool(name: str, arguments: Optional[Dict[str, Any]]) -> Li
             return [types.TextContent(type="text", text=f"Error: {str(e)}", error=True)]
 
     elif name == "show_security_rules":
-        commands_desc = "All commands allowed" if executor.security_config.allow_all_commands else ", ".join(sorted(executor.security_config.allowed_commands))
-        flags_desc = "All flags allowed" if executor.security_config.allow_all_flags else ", ".join(sorted(executor.security_config.allowed_flags))
-        
+        commands_desc = (
+            "All commands allowed"
+            if executor.security_config.allow_all_commands
+            else ", ".join(sorted(executor.security_config.allowed_commands))
+        )
+        flags_desc = (
+            "All flags allowed"
+            if executor.security_config.allow_all_flags
+            else ", ".join(sorted(executor.security_config.allowed_flags))
+        )
+
         security_info = (
             "Security Configuration:\n"
             f"==================\n"
