@@ -16,22 +16,23 @@ comprehensive security features.
 
 # Table of Contents
 
-1. [Overview](#overview)
-2. [Features](#features)
-3. [Configuration](#configuration)
-4. [Available Tools](#available-tools)
-    - [run_command](#run_command)
-    - [show_security_rules](#show_security_rules)
-5. [Usage with Claude Desktop](#usage-with-claude-desktop)
-    - [Development/Unpublished Servers Configuration](#developmentunpublished-servers-configuration)
-    - [Published Servers Configuration](#published-servers-configuration)
-6. [Security Features](#security-features)
-7. [Error Handling](#error-handling)
-8. [Development](#development)
+- [CLI MCP Server](#cli-mcp-server)
+- [Table of Contents](#table-of-contents)
+  - [Overview](#overview)
+  - [Features](#features)
+  - [Configuration](#configuration)
+  - [Installation](#installation)
+  - [Available Tools](#available-tools)
+    - [run\_command](#run_command)
+    - [show\_security\_rules](#show_security_rules)
+  - [Usage with Claude Desktop](#usage-with-claude-desktop)
+  - [Security Features](#security-features)
+  - [Error Handling](#error-handling)
+  - [Development](#development)
     - [Prerequisites](#prerequisites)
     - [Building and Publishing](#building-and-publishing)
     - [Debugging](#debugging)
-9. [License](#license)
+  - [License](#license)
 
 ---
 
@@ -62,6 +63,7 @@ Configure the server using environment variables:
 | `ALLOWED_FLAGS`     | Comma-separated list of allowed flags or 'all'       | `-l,-a,--help`    |
 | `MAX_COMMAND_LENGTH`| Maximum command string length                        | `1024`            |
 | `COMMAND_TIMEOUT`   | Command execution timeout (seconds)                  | `30`              |
+| `ALLOW_SHELL_OPERATORS` | Allow shell operators (&&, \|\|, \|, >, etc.)    | `false`           |
 
 Note: Setting `ALLOWED_COMMANDS` or `ALLOWED_FLAGS` to 'all' will allow any command or flag respectively.
 
@@ -90,7 +92,7 @@ Executes whitelisted CLI commands within allowed directories.
 ```
 
 **Security Notes:**
-- Shell operators (&&, |, >, >>) are not supported
+- Shell operators (&&, |, >, >>) are not supported by default, but can be enabled with `ALLOW_SHELL_OPERATORS=true`
 - Commands must be whitelisted unless ALLOWED_COMMANDS='all'
 - Flags must be whitelisted unless ALLOWED_FLAGS='all'
 - All paths are validated to be within ALLOWED_DIR
@@ -125,7 +127,8 @@ Add to your `~/Library/Application\ Support/Claude/claude_desktop_config.json`:
         "ALLOWED_COMMANDS": "ls,cat,pwd,echo",
         "ALLOWED_FLAGS": "-l,-a,--help,--version",
         "MAX_COMMAND_LENGTH": "1024",
-        "COMMAND_TIMEOUT": "30"
+        "COMMAND_TIMEOUT": "30",
+        "ALLOW_SHELL_OPERATORS": "false"
       }
     }
   }
@@ -147,7 +150,8 @@ Add to your `~/Library/Application\ Support/Claude/claude_desktop_config.json`:
         "ALLOWED_COMMANDS": "ls,cat,pwd,echo",
         "ALLOWED_FLAGS": "-l,-a,--help,--version",
         "MAX_COMMAND_LENGTH": "1024",
-        "COMMAND_TIMEOUT": "30"
+        "COMMAND_TIMEOUT": "30",
+        "ALLOW_SHELL_OPERATORS": "false"
       }
     }
   }
@@ -160,7 +164,7 @@ Add to your `~/Library/Application\ Support/Claude/claude_desktop_config.json`:
 - ✅ Command whitelist enforcement with 'all' option
 - ✅ Flag validation with 'all' option
 - ✅ Path traversal prevention and normalization
-- ✅ Shell operator blocking
+- ✅ Shell operator blocking (with opt-in support via `ALLOW_SHELL_OPERATORS=true`)
 - ✅ Command length limits
 - ✅ Execution timeouts
 - ✅ Working directory restrictions
