@@ -109,21 +109,27 @@ class CommandExecutor:
 
         # Define shell operators
         shell_operators = ["&&", "||", "|", ">", ">>", "<", "<<", ";"]
-        
+
         # Check if command contains shell operators
-        contains_shell_operator = any(operator in command_string for operator in shell_operators)
-        
+        contains_shell_operator = any(
+            operator in command_string for operator in shell_operators
+        )
+
         if contains_shell_operator:
             # Check if shell operators are allowed
             if not self.security_config.allow_shell_operators:
                 # If shell operators are not allowed, raise an error
                 for operator in shell_operators:
                     if operator in command_string:
-                        raise CommandSecurityError(f"Shell operator '{operator}' is not supported. Set ALLOW_SHELL_OPERATORS=true to enable.")
-            
+                        raise CommandSecurityError(
+                            f"Shell operator '{operator}' is not supported. Set ALLOW_SHELL_OPERATORS=true to enable."
+                        )
+
             # Split the command by shell operators and validate each part
-            return self._validate_command_with_operators(command_string, shell_operators)
-        
+            return self._validate_command_with_operators(
+                command_string, shell_operators
+            )
+
         # Process single command without shell operators
         return self._validate_single_command(command_string)
 
@@ -169,13 +175,13 @@ class CommandExecutor:
     def _validate_single_command(self, command_string: str) -> tuple[str, List[str]]:
         """
         Validates a single command without shell operators.
-        
+
         Args:
             command_string (str): The command string to validate.
-            
+
         Returns:
             tuple[str, List[str]]: A tuple containing the command and validated arguments.
-            
+
         Raises:
             CommandSecurityError: If the command fails validation.
         """
@@ -187,14 +193,20 @@ class CommandExecutor:
             command, args = parts[0], parts[1:]
 
             # Validate command if not in allow-all mode
-            if not self.security_config.allow_all_commands and command not in self.security_config.allowed_commands:
+            if (
+                not self.security_config.allow_all_commands
+                and command not in self.security_config.allowed_commands
+            ):
                 raise CommandSecurityError(f"Command '{command}' is not allowed")
 
             # Process and validate arguments
             validated_args = []
             for arg in args:
                 if arg.startswith("-"):
-                    if not self.security_config.allow_all_flags and arg not in self.security_config.allowed_flags:
+                    if (
+                        not self.security_config.allow_all_flags
+                        and arg not in self.security_config.allowed_flags
+                    ):
                         raise CommandSecurityError(f"Flag '{arg}' is not allowed")
                     validated_args.append(arg)
                     continue
@@ -205,7 +217,7 @@ class CommandExecutor:
                         # If it's a URL, we don't need to normalize it
                         validated_args.append(arg)
                         continue
-                    
+
                     normalized_path = self._normalize_path(arg)
                     validated_args.append(normalized_path)
                 else:
@@ -217,50 +229,54 @@ class CommandExecutor:
         except ValueError as e:
             raise CommandSecurityError(f"Invalid command format: {str(e)}")
 
-    def _validate_command_with_operators(self, command_string: str, shell_operators: List[str]) -> tuple[str, List[str]]:
+    def _validate_command_with_operators(
+        self, command_string: str, shell_operators: List[str]
+    ) -> tuple[str, List[str]]:
         """
         Validates a command string that contains shell operators.
-        
+
         Splits the command string by shell operators and validates each part individually.
         If all parts are valid, returns the original command to be executed with shell=True.
-        
+
         Args:
             command_string (str): The command string containing shell operators.
             shell_operators (List[str]): List of shell operators to split by.
-            
+
         Returns:
             tuple[str, List[str]]: A tuple containing the command and empty args list
                                   (since the command will be executed with shell=True)
-                                  
+
         Raises:
             CommandSecurityError: If any part of the command fails validation.
         """
         # Create a regex pattern to split by any of the shell operators
         # We need to escape special regex characters in the operators
         escaped_operators = [re.escape(op) for op in shell_operators]
-        pattern = '|'.join(escaped_operators)
-        
+        pattern = "|".join(escaped_operators)
+
         # Split the command string by shell operators, keeping the operators
-        parts = re.split(f'({pattern})', command_string)
-        
+        parts = re.split(f"({pattern})", command_string)
+
         # Filter out empty parts and whitespace-only parts
         parts = [part.strip() for part in parts if part.strip()]
-        
+
         # Group commands and operators
         commands = []
         i = 0
         while i < len(parts):
-            if i + 1 < len(parts) and parts[i+1] in shell_operators:
+            if i + 1 < len(parts) and parts[i + 1] in shell_operators:
                 # If next part is an operator, current part is a command
                 if parts[i]:  # Skip empty commands
                     commands.append(parts[i])
                 i += 2  # Skip the operator
             else:
                 # If no operator follows, this is the last command
-                if parts[i] and parts[i] not in shell_operators:  # Skip if it's an operator
+                if (
+                    parts[i] and parts[i] not in shell_operators
+                ):  # Skip if it's an operator
                     commands.append(parts[i])
                 i += 1
-        
+
         # Validate each command individually
         for cmd in commands:
             try:
@@ -269,8 +285,10 @@ class CommandExecutor:
             except CommandSecurityError as e:
                 raise CommandSecurityError(f"Invalid command part '{cmd}': {str(e)}")
             except ValueError as e:
-                raise CommandSecurityError(f"Invalid command format in '{cmd}': {str(e)}")
-        
+                raise CommandSecurityError(
+                    f"Invalid command format in '{cmd}': {str(e)}"
+                )
+
         # If we get here, all commands passed validation
         # Return the original command string to be executed with shell=True
         return command_string, []
@@ -307,17 +325,19 @@ class CommandExecutor:
 
         try:
             command, args = self.validate_command(command_string)
-            
+
             # Check if this is a command with shell operators
             shell_operators = ["&&", "||", "|", ">", ">>", "<", "<<", ";"]
             use_shell = any(operator in command_string for operator in shell_operators)
-            
+
             # Double-check that shell operators are allowed if they are present
             if use_shell and not self.security_config.allow_shell_operators:
                 for operator in shell_operators:
                     if operator in command_string:
-                        raise CommandSecurityError(f"Shell operator '{operator}' is not supported. Set ALLOW_SHELL_OPERATORS=true to enable.")
-            
+                        raise CommandSecurityError(
+                            f"Shell operator '{operator}' is not supported. Set ALLOW_SHELL_OPERATORS=true to enable."
+                        )
+
             if use_shell:
                 # For commands with shell operators, execute with shell=True
                 return subprocess.run(
@@ -378,11 +398,11 @@ def load_security_config() -> SecurityConfig:
     allowed_commands = os.getenv("ALLOWED_COMMANDS", "ls,cat,pwd")
     allowed_flags = os.getenv("ALLOWED_FLAGS", "-l,-a,--help")
     allow_shell_operators_env = os.getenv("ALLOW_SHELL_OPERATORS", "false")
-    
-    allow_all_commands = allowed_commands.lower() == 'all'
-    allow_all_flags = allowed_flags.lower() == 'all'
-    allow_shell_operators = allow_shell_operators_env.lower() in ('true', '1')
-    
+
+    allow_all_commands = allowed_commands.lower() == "all"
+    allow_all_flags = allowed_flags.lower() == "all"
+    allow_shell_operators = allow_shell_operators_env.lower() in ("true", "1")
+
     return SecurityConfig(
         allowed_commands=(
             set() if allow_all_commands else set(allowed_commands.split(","))
