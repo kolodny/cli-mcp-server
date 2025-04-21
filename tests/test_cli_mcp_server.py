@@ -26,6 +26,8 @@ class TestCLIMCPServer(unittest.TestCase):
         # Remove custom allowed commands/flags to use defaults
         os.environ.pop("ALLOWED_COMMANDS", None)
         os.environ.pop("ALLOWED_FLAGS", None)
+        # Ensure shell operators are disabled by default
+        os.environ.pop("ALLOW_SHELL_OPERATORS", None)
         # Reload server module to pick up env changes
         try:
             import cli_mcp_server.server as server_module
@@ -90,6 +92,67 @@ class TestCLIMCPServer(unittest.TestCase):
         output_texts = [t for t in texts if "return code" not in t]
         self.assertTrue(
             any(t.strip() for t in output_texts), f"No IP address retrieved: {texts}"
+        )
+        self.assertTrue(any("return code: 0" in text for text in texts))
+    
+    def test_shell_operator_disallowed(self):
+        # Ensure shell operators are disabled by default
+        result = asyncio.run(
+            self.server.handle_call_tool("run_command", {"command": "echo 1 && echo 2"})
+        )
+        texts = [tc.text for tc in result]
+        print_results_table("test_shell_operator_disallowed", result)
+        self.assertTrue(
+            any("Security violation" in text for text in texts),
+            f"Expected security violation for shell operators, got: {texts}",
+        )
+        self.assertTrue(
+            any("Shell operator '&&' is not supported" in text for text in texts),
+            f"Expected '&&' not supported message, got: {texts}",
+        )
+
+    def test_shell_operator_allowed_and_executes_commands(self):
+        # Enable shell operators and allow all commands/flags
+        os.environ["ALLOW_SHELL_OPERATORS"] = "true"
+        os.environ["ALLOWED_COMMANDS"] = "all"
+        os.environ["ALLOWED_FLAGS"] = "all"
+        # Reload server to pick up new settings
+        import cli_mcp_server.server as server_module
+
+        server = importlib.reload(server_module)
+        # Execute a compound command with '&&'
+        result = asyncio.run(
+            server.handle_call_tool("run_command", {"command": "echo 3 && echo 4"})
+        )
+        texts = [tc.text for tc in result]
+        print_results_table("test_shell_operator_allowed", result)
+        # The first element should contain the combined stdout from both commands
+        self.assertEqual(
+            texts[0].strip(),
+            "3\n4",
+            f"Unexpected combined output, got: {texts[0]!r}",
+        )
+        self.assertTrue(any("return code: 0" in text for text in texts))
+
+    def test_shell_operator_semicolon(self):
+        # Enable shell operators and allow all commands/flags
+        os.environ["ALLOW_SHELL_OPERATORS"] = "true"
+        os.environ["ALLOWED_COMMANDS"] = "all"
+        os.environ["ALLOWED_FLAGS"] = "all"
+        # Reload server to pick up new settings
+        import cli_mcp_server.server as server_module
+
+        server = importlib.reload(server_module)
+        # Execute a compound command with ';'
+        result = asyncio.run(
+            server.handle_call_tool("run_command", {"command": "echo 5; echo 6"})
+        )
+        texts = [tc.text for tc in result]
+        print_results_table("test_shell_operator_semicolon", result)
+        self.assertEqual(
+            texts[0].strip(),
+            "5\n6",
+            f"Unexpected combined output, got: {texts[0]!r}",
         )
         self.assertTrue(any("return code: 0" in text for text in texts))
 
