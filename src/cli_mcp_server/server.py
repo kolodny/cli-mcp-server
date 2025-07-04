@@ -202,6 +202,8 @@ class CommandExecutor:
             # Process and validate arguments
             validated_args = []
             for arg in args:
+                is_explicit_path = (arg.startswith(("./", "../", "/")) and not arg.startswith("//")) or arg == "."
+                
                 if arg.startswith("-"):
                     if (
                         not self.security_config.allow_all_flags
@@ -210,9 +212,8 @@ class CommandExecutor:
                         raise CommandSecurityError(f"Flag '{arg}' is not allowed")
                     validated_args.append(arg)
                     continue
-
                 # For any path-like argument, validate it
-                if "/" in arg or "\\" in arg or os.path.isabs(arg) or arg == ".":
+                if is_explicit_path or ("/" in arg and os.path.exists(os.path.join(self.allowed_dir, arg))):
                     if self._is_url_path(arg):
                         # If it's a URL, we don't need to normalize it
                         validated_args.append(arg)
